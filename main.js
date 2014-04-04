@@ -265,6 +265,7 @@ var Player = enchant.Class.create(enchant.Sprite, {
         game.reset();
       }
     });
+    // move player outside of the screen :)
     this.x = -100;
     this.y = -100;
     
@@ -274,18 +275,22 @@ var Player = enchant.Class.create(enchant.Sprite, {
 
 var Shoot = enchant.Class.create(enchant.Sprite, {
   initialize: function(owner, x, y, direction) {
-    enchant.Sprite.call(this, 7, 7);
+    var size = 7;
+    
+    enchant.Sprite.call(this, size, size);
+    
+    this.image = game.assets['shot.png'];
+    this.x = x - size/2;
+    this.y = y - size/2;
+    this.frame = 0;
     
     this.shotdist = 0;
     this.owner = owner;
     this.owner.shots ++;
     this.wallbounces = 0;
-    this.image = game.assets['shot.png'];
-    this.x = x - 3.5;
-    this.y = y - 3.5;
-    this.frame = 0;
-    this.dir = direction;
-    this.ray = new geom2d.Ray(this.x + 3.5, this.y + 3.5, this.dir);
+	this.dir = direction;
+    this.ray = new geom2d.Ray(this.x + size/2, this.y + size/2, this.dir);
+    // enchant.js model rotation
     {
       this._rotation = this.dir/Math.PI*180;
       this._dirty = true;
@@ -295,31 +300,38 @@ var Shoot = enchant.Class.create(enchant.Sprite, {
     this.addEventListener('enterframe', function() {
       var hit = hitwall(map, this.ray, this.moveSpeed);
       if(!!hit) {
+        // move to wall
         this.x += hit[0] * this.ray.dirx;
         this.y += hit[0] * this.ray.diry;
         
+        // reflect at wall
         this.dir = hit[1]*2 - this.dir;
         this.ray.setDirection(this.dir);
-        
+        // enchant.js model rotation
         {
           this._rotation = this.dir/Math.PI*180;
           this._dirty = true;
         }
         
+        // move further
         this.x += (this.moveSpeed - hit[0]) * this.ray.dirx;
         this.y += (this.moveSpeed - hit[0]) * this.ray.diry;
+        // register wallbounce
         this.wallbounces ++;
       } else {
         this.x += this.moveSpeed * this.ray.dirx;
         this.y += this.moveSpeed * this.ray.diry;
       }
-      this.ray.setPosition(this.x+3.5, this.y+3.5);
+      // store position in the ray object for the next collision detection too
+      this.ray.setPosition(this.x+size/2, this.y+size/2);
       
+      // remove the shoot if it moved to far
       this.shotdist += this.moveSpeed;
       if (this.shotdist >= config.shotdist) {
         this.remove();
         return;
       }
+      // remove the shoot if it moved outside of the map
       if (this.y > map.height || this.x > map.width || this.x < -this.width || this.y < -this.height) {
         this.remove();
         return;
@@ -329,17 +341,13 @@ var Shoot = enchant.Class.create(enchant.Sprite, {
   },
   remove: function() {
     this.owner.shots--;
-    /* this should never happen but it does */
+    // this should never happen but it does ... TODO FIX
     if(this.owner.shots < 0) this.owner.shots = 0
     stage.removeChild(this);
     delete this;
   }
 });
 
-/**
- * PlayerShoot (self shooting) class. Created and succeeds Shoot class.
- * PlayerShoot (自弾) クラス。Shootクラスを継承して作成する。
- */
 var PlayerShoot = enchant.Class.create(Shoot, {
   initialize: function(owner, x, y, rot) {
     Shoot.call(this, owner, x, y, rot);
@@ -351,6 +359,7 @@ var PlayerShoot = enchant.Class.create(Shoot, {
           if(player === this.owner && this.wallbounces < 1)
             continue;
           player.lossLife(this.owner);
+          // remove shoot on hit
           this.remove();
           return;
         }
@@ -359,6 +368,7 @@ var PlayerShoot = enchant.Class.create(Shoot, {
   }
 });
 
+/* whether a circle with center cx,cy and radius r collides with a map obstacle */
 var hittest = function(map, cx, cy, r) {
   var d = 5;
   var r_sqr = r * r;
@@ -390,7 +400,7 @@ var hittest = function(map, cx, cy, r) {
     }
     return false;
   };
-  var check_border = function(x,y,q) {
+  var check_corner = function(x,y,q) {
     if (!!collisionData[my+y] && !!collisionData[my+y][mx+x]) {
       var dx = cx - tileWidth *  (mx+q[0]);
       var dy = cy - tileHeight * (my+q[1]);
@@ -400,18 +410,23 @@ var hittest = function(map, cx, cy, r) {
     return false;;
   };
   
+  // left, top, right, bottom map cell
   if(check(-1, 0,[0,0,0,1])) return true;
   if(check( 0,-1,[0,0,1,0])) return true;
   if(check( 1, 0,[1,0,0,1])) return true;
   if(check( 0, 1,[0,1,1,0])) return true;
-  if(check_border(-1,-1,[0,0])) return true;
-  if(check_border( 1,-1,[1,0])) return true;
-  if(check_border(-1, 1,[0,1])) return true;
-  if(check_border( 1, 1,[1,1])) return true;
+  // corner cells
+  if(check_corner(-1,-1,[0,0])) return true;
+  if(check_corner( 1,-1,[1,0])) return true;
+  if(check_corner(-1, 1,[0,1])) return true;
+  if(check_corner( 1, 1,[1,1])) return true;
   
   return false;
 };
 
+/* whether where a ray with length 'speed' collides with a map obstacle.
+ * If it collides a array with the colliding distance and the wall normal is
+ * returned - otherwise 'false' */
 var hitwall = function(map, ray, speed) {
   var collisionData = map.collisionData;
   var tileWidth = map._tileWidth;
@@ -422,17 +437,17 @@ var hitwall = function(map, ray, speed) {
   var refection_base;
   var t = Number.POSITIVE_INFINITY;
 
-  var check = function(dx, dy, q, angle){
+  var check = function(dx, dy, q, wallnormal){
     if(!!collisionData[my+dy] && !!collisionData[my+dy][mx+dx]) {
       var aabb = new geom2d.AABB();
       aabb.add(tileWidth * (mx + q[0]), tileHeight * (my + q[1]));
       aabb.add(tileWidth * (mx + q[0] + q[2]), tileHeight * (my + q[1] + q[3]));
-      // extend the bb to avoid 'glitching' through rounding errors
+      // extend the bb to avoid 'glitching' because of rounding errors
       aabb.extend(0.01);
       var _t = aabb.hitray(ray);
       if(_t <= speed && _t >= 0 && _t < t) {
         t = _t;
-        refection_base = angle;
+        refection_base = wallnormal;
       }
     }
   };
