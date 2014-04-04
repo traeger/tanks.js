@@ -85,17 +85,14 @@ window.onload = function() {
     
     game.rootScene.backgroundColor = 'black';
     game.rootScene.addEventListener('enterframe', function() {
-      scoreLabel_1.setLife(player_1.life);
-      scoreLabel_2.setLife(player_2.life);
-      scoreLabel_1.setAmmu(config.ammu - player_1.shots);
-      scoreLabel_2.setAmmu(config.ammu - player_2.shots);
+      scoreLabel_1.setText([player_1.life]);
+      scoreLabel_2.setText([player_2.life]);
+      scoreLabel.setText([player_2.score, player_1.score]);
     });
     
     game.rootScene.addChild(map);
     game.rootScene.addChild(stage);
-    var scoreLabel_2 = new ScoreBoard(game, 10, 8, 'left');
-    var scoreLabel_1 = new ScoreBoard(game, config.map.width*16-310, 8, 'right');
-
+    
     // fst player control
     game.keybind(37, 'left_1');  // left	
     game.keybind(39, 'right_1'); // right
@@ -110,7 +107,10 @@ window.onload = function() {
     game.keybind(83, 'down_2');  // s
     game.keybind(86, 'shoot_2'); // v
     
-    game.show_controlhelp('up/left/down/right/alt', config.map.width*16-308, config.map.height*16, 'right');
+    var scoreLabel_2 = new ScoreBoard(['LIFE ',''], game, 8, config.map.height*16-16, 'left');
+    var scoreLabel_1 = new ScoreBoard(['',' LIFE'], game, (config.map.width*16-300)-8, config.map.height*16-16, 'right');
+    var scoreLabel = new ScoreBoard(['',' : '], game, (config.map.width*16-300)/2, config.map.height*16-16, 'center');
+    game.show_controlhelp('up/left/down/right/alt', (config.map.width*16-300)-8, config.map.height*16, 'right');
     game.show_controlhelp('w/a/s/d/v', 8, config.map.height*16, 'left');
   };
   game.reset = function() {
@@ -142,10 +142,9 @@ window.onload = function() {
   game.start();
 };
 
-var ScoreBoard = function(game, x, y, pos) {
+var ScoreBoard = function(labeltext, game, x, y, pos) {
   this.label = new Label();
-  this.life = '';
-  this.ammu = '';
+  this.labeltext = labeltext;
   
   this.label.x = x;
   this.label.y = y;        
@@ -156,16 +155,14 @@ var ScoreBoard = function(game, x, y, pos) {
   
   game.rootScene.addChild(this.label);
 };
-ScoreBoard.prototype.redraw = function() {
-  this.label.text = 'LIFE ' + this.life + '<br>AMMU ' + '|'.repeat(this.ammu);
-};
-ScoreBoard.prototype.setLife = function(life) {
-  this.life = life;
-  this.redraw();
-};
-ScoreBoard.prototype.setAmmu = function(ammu) {
-  this.ammu = ammu;
-  this.redraw();
+ScoreBoard.prototype.setText = function(text) {
+  var s = this.labeltext[0];
+  for(var i = 0, len = text.length; i < len; i++) {
+    s += text[i];
+    if(!!this.labeltext[i+1]) 
+      s += this.labeltext[i+1];
+  }
+  this.label.text = s;
 };
 String.prototype.repeat = function( num ) {
   return new Array( num + 1 ).join( this );
@@ -179,6 +176,7 @@ var Player = enchant.Class.create(enchant.Sprite, {
     this.r = 12 / 2;
     this.shots = 0;
     this.life = config.life;
+    this.score = 0;
     this.image = game.assets['MulticolorTanks.png'];
     
     this.x = x;
@@ -233,12 +231,20 @@ var Player = enchant.Class.create(enchant.Sprite, {
     });
     stage.addChild(this);
   },
-  lossLife: function() {
+  lossLife: function(source) {
     this.life -= 1;
     if(this.life <= 0)
-      this.kill();
+      this.kill(source);
   },
-  kill: function() {
+  kill: function(killer) {
+    if(killer != this) {
+      killer.score++;
+    }
+    else {
+      this.score--;
+      if(this.score < 0) this.score = 0;
+    }
+    
     console.log('killed');
     
     var explosion = new enchant.Sprite(16, 16);
@@ -323,6 +329,8 @@ var Shoot = enchant.Class.create(enchant.Sprite, {
   },
   remove: function() {
     this.owner.shots--;
+    /* this should never happen but it does */
+    if(this.owner.shots < 0) this.owner.shots = 0
     stage.removeChild(this);
     delete this;
   }
@@ -342,7 +350,7 @@ var PlayerShoot = enchant.Class.create(Shoot, {
         if (player.intersect(this)) {
           if(player === this.owner && this.wallbounces < 1)
             continue;
-          player.lossLife();
+          player.lossLife(this.owner);
           this.remove();
           return;
         }
