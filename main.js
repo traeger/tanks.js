@@ -39,7 +39,7 @@ var config = {
   start_1: {x:700, y:120},
   start_2: {x:50, y:120},
   map: map_ilja,
-  footer: 13
+  footer: 15
 };
 
 var debug = {};
@@ -107,9 +107,9 @@ window.onload = function() {
     game.keybind(83, 'down_2');  // s
     game.keybind(86, 'shoot_2'); // v
     
-    var scoreLabel_2 = new ScoreBoard(['LIFE ',''], game, 8, config.map.height*16-16, 'left');
-    var scoreLabel_1 = new ScoreBoard(['',' LIFE'], game, (config.map.width*16-300)-8, config.map.height*16-16, 'right');
-    var scoreLabel = new ScoreBoard(['',' : '], game, (config.map.width*16-300)/2, config.map.height*16-16, 'center');
+    var scoreLabel_2 = new ScoreBoard(['',' LIFE'], game, 258, config.map.height*16, 'left');
+    var scoreLabel_1 = new ScoreBoard(['LIFE ',''], game, (config.map.width*16-300)-258, config.map.height*16, 'right');
+    var scoreLabel = new ScoreBoard(['',' : '], game, (config.map.width*16-300)/2, config.map.height*16, 'center');
     game.show_controlhelp('up/left/down/right/alt', (config.map.width*16-300)-8, config.map.height*16, 'right');
     game.show_controlhelp('w/a/s/d/v', 8, config.map.height*16, 'left');
   };
