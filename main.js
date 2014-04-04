@@ -428,7 +428,7 @@ var hitwall = function(map, ray, speed) {
       aabb.add(tileWidth * (mx + q[0]), tileHeight * (my + q[1]));
       aabb.add(tileWidth * (mx + q[0] + q[2]), tileHeight * (my + q[1] + q[3]));
       // extend the bb to avoid 'glitching' through rounding errors
-      aabb.extend(0.001);
+      aabb.extend(0.01);
       var _t = aabb.hitray(ray);
       if(_t <= speed && _t >= 0 && _t < t) {
         t = _t;
