@@ -50,7 +50,13 @@ window.onload = function() {
   game = new Game(config.map.width*16, config.map.height*16 + config.footer);
   game.fps = 48;
   game.touched = false;
-  game.preload('shot.png', 'map1.gif', 'MulticolorTanks.png', 'effect0.gif');
+  game.preload(
+    'shot.png', 
+    'map1.gif', 
+    'MulticolorTanks.png', 
+    'effect0.gif', 
+    'explosion.wav'
+  );
   game.onload = function() {
     map = new Map(16, 16);
     // map
@@ -112,6 +118,10 @@ window.onload = function() {
     var scoreLabel = new ScoreBoard(['',' : '], game, (config.map.width*16-300)/2, config.map.height*16, 'center');
     game.show_controlhelp('up/left/down/right/alt', (config.map.width*16-300)-8, config.map.height*16, 'right');
     game.show_controlhelp('w/a/s/d/v', 8, config.map.height*16, 'left');
+    
+    game.sound = {
+      explosion: game.assets['explosion.wav']
+    }
   };
   game.reset = function() {
     player_1._dirty = true;
@@ -265,6 +275,7 @@ var Player = enchant.Class.create(enchant.Sprite, {
         game.reset();
       }
     });
+    game.sound.explosion.play();
     // move player outside of the screen :)
     this.x = -100;
     this.y = -100;

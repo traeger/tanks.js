@@ -53,7 +53,12 @@ THE SOFTWARE.
 ***
 * resources
 
+Thanks to the creators of all great resources.
+
 the game resources are part of the shooter-example of enchant.js
  - https://github.com/wise9/enchant.js/tree/master/examples/expert/shooting
 MulticolorTanks.png
  - http://www.xnaresources.com/default.asp?page=tutorial:spriteengine:1
+explosion.wav
+ - License: Attribution 3.0 | Recorded by Mike Koenig
+ - http://soundbible.com/538-Blast.html
