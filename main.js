@@ -253,9 +253,11 @@ var Player = enchant.Class.create(enchant.Sprite, {
       return
     }
   
-    this.life -= 1;
-    if(this.life <= 0)
-      this.kill(source);
+    if(this.life > 0) {
+      this.life -= 1;
+      if(this.life == 0)
+      	this.kill(source);
+    }
   },
   kill: function(killer) {
     if(killer != this) {
