@@ -29,6 +29,7 @@ THE SOFTWARE.
 enchant();
 
 var config = {
+  respawnprotection: 120,
   speed: 1.2,
   rotspeed: 3,
   life: 3,
@@ -36,8 +37,8 @@ var config = {
   shotspeed: 5,
   shotdist: 900,
   shotbreak: 12,
-  start_1: {x:700, y:120},
-  start_2: {x:50, y:120},
+  start_1: {x:700, y:120, rot:180},
+  start_2: {x:50, y:120, rot:0},
   map: map_ilja,
   footer: 15
 };
@@ -122,8 +123,13 @@ window.onload = function() {
     game.sound = {
       explosion: game.assets['explosion.wav']
     }
+    
+    game.reset();
   };
   game.reset = function() {
+    // remember the startframe
+    game.reset_frame = game.frame;
+  
     player_1._dirty = true;
     player_2._dirty = true;
     
@@ -133,8 +139,8 @@ window.onload = function() {
     player_2.y = config.start_2.y;
     player_1.life = config.life;
     player_2.life = config.life;
-    player_1._rotation = 0;
-    player_2._rotation = 0;
+    player_1._rotation = config.start_1.rot;
+    player_2._rotation = config.start_2.rot;
   };
   game.show_controlhelp = function(text, x, y, pos) {
   	label = new Label();
@@ -242,6 +248,11 @@ var Player = enchant.Class.create(enchant.Sprite, {
     stage.addChild(this);
   },
   lossLife: function(source) {
+    if(!!game.reset_frame && (game.reset_frame + config.respawnprotection) >= game.frame) {
+      console.log('respawn protection active ' + (game.reset_frame + config.respawnprotection) + '<=' + game.frame);
+      return
+    }
+  
     this.life -= 1;
     if(this.life <= 0)
       this.kill(source);
