@@ -39,7 +39,7 @@ var config = {
   shotbreak: 12,
   start_1: {x:700, y:120, rot:180},
   start_2: {x:50, y:120, rot:0},
-  map: map_ilja2,
+  map: map_ilja21,
   footer: 15
 };
 
@@ -102,11 +102,10 @@ window.onload = function() {
     });
     
     game.mapcontainer = new Group();
+    game.loadmap(config.map.data);
     
     game.rootScene.addChild(game.mapcontainer);
     game.rootScene.addChild(stage);
-    
-    game.loadmap(config.map.data);
     
     // fst player control
     game.keybind(37, 'left_1');  // left	
