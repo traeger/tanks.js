@@ -39,13 +39,12 @@ var config = {
   shotbreak: 12,
   start_1: {x:700, y:120, rot:180},
   start_2: {x:50, y:120, rot:0},
-  map: map_ilja,
+  map: map_ilja2,
   footer: 15
 };
 
 var debug = {};
 var stage = new Group();
-var map
 
 window.onload = function() {
   game = new Game(config.map.width*16, config.map.height*16 + config.footer);
@@ -58,34 +57,39 @@ window.onload = function() {
     'effect0.gif', 
     'explosion.wav'
   );
-  game.onload = function() {
-    map = new Map(16, 16);
-    // map
-    {
-      map.image = game.assets['map1.gif'];
-
-      var loadmap = function(lines) {
-        return lines.map(function(line) { return line.split('').map( function(v) {return parseInt(v); }); });
-      };
-      var f_ground = function(v) {
-        return 55; //322;
-      };
-      var f_obstacles = function(v) {
-        return v ? 320 : -1;
-      };
-
-      var mapdata = loadmap(config.map.data);
-      var ground = mapdata.map(function(line) {
-        return line.map(f_ground);
-      });
-      var obstacles = mapdata.map(function(line) {
-        return line.map(f_obstacles);
-      });
+  game.loadmap = function(mapdata) {
+    if(game.map) {
+      game.mapcontainer.removeChild(game.map);
     }
+  
+    var map = new Map(16, 16);
+    map.image = game.assets['map1.gif'];
 
+    var loadmap = function(lines) {
+      return lines.map(function(line) { return line.split('').map( function(v) {return parseInt(v); }); });
+    };
+    var f_ground = function(v) {
+      return 55; //322;
+    };
+    var f_obstacles = function(v) {
+      return v ? 320 : -1;
+    };
+
+    var _mapdata = loadmap(mapdata);
+    var ground = _mapdata.map(function(line) {
+      return line.map(f_ground);
+    });
+    var obstacles = _mapdata.map(function(line) {
+      return line.map(f_obstacles);
+    });
+    
     map.loadData(ground, obstacles);
-    map.collisionData = mapdata;
-
+    map.collisionData = _mapdata;
+    
+    game.map = map;
+    game.mapcontainer.addChild(game.map);
+  }
+  game.onload = function() {
     player_1 = new Player(config.start_1.x, config.start_1.y, 1);
     player_2 = new Player(config.start_2.x, config.start_2.y, 2);
     players = [player_1, player_2];
@@ -97,8 +101,12 @@ window.onload = function() {
       scoreLabel.setText([player_2.score, player_1.score]);
     });
     
-    game.rootScene.addChild(map);
+    game.mapcontainer = new Group();
+    
+    game.rootScene.addChild(game.mapcontainer);
     game.rootScene.addChild(stage);
+    
+    game.loadmap(config.map.data);
     
     // fst player control
     game.keybind(37, 'left_1');  // left	
@@ -240,7 +248,7 @@ var Player = enchant.Class.create(enchant.Sprite, {
         var dx = speed * Math.cos(r);
         var dy = speed * Math.sin(r);
 
-        if (!hittest(map, this.centerx() + dx, this.centery() + dy, this.r)) {
+        if (!hittest(game.map, this.centerx() + dx, this.centery() + dy, this.r)) {
           this.moveBy(dx, dy);
         }
       }
@@ -322,7 +330,7 @@ var Shoot = enchant.Class.create(enchant.Sprite, {
     
     this.moveSpeed = config.shotspeed;
     this.addEventListener('enterframe', function() {
-      var hit = hitwall(map, this.ray, this.moveSpeed);
+      var hit = hitwall(game.map, this.ray, this.moveSpeed);
       if(!!hit) {
         // move to wall
         this.x += hit[0] * this.ray.dirx;
@@ -356,7 +364,7 @@ var Shoot = enchant.Class.create(enchant.Sprite, {
         return;
       }
       // remove the shoot if it moved outside of the map
-      if (this.y > map.height || this.x > map.width || this.x < -this.width || this.y < -this.height) {
+      if (this.y > game.map.height || this.x > game.map.width || this.x < -this.width || this.y < -this.height) {
         this.remove();
         return;
       }
